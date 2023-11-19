@@ -1,3 +1,3 @@
-import loan_calculator
+import loan
 
 loan_calculator.main()
