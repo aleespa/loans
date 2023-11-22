@@ -89,8 +89,9 @@ class Loan:
         return ((date_0 - date_1).days / 365) * self.interest_rate
 
     def create_amortization(self) -> pd.DataFrame:
+        list_payments = list(set(self.payment_dates + list(self.additional_payment.keys())))
         table = pd.DataFrame(columns=["Principal"],
-                             index=self.payment_dates + list(self.additional_payment.keys()))
+                             index=list_payments)
         table.loc[self.start_date, "Principal"] = self.initial_value
         table.loc[self.start_date, "Principal payment"] = 0
         table.loc[self.start_date, "Interests"] = 0
@@ -102,22 +103,28 @@ class Loan:
             table.loc[date, "Interests"] = (table.loc[previous_date, "Principal"]
                                             * self.calculate_interest(date, previous_date))
             if table.loc[date, "Additional"]:
-                table.loc[date, "Principal payment"] = self.additional_payment[date] - table.loc[date, "Interests"]
+                if self.additional_payment[date]["on_top"]:
+                    table.loc[date, "Principal payment"] = (self.additional_payment[date]["amount"] + self.payment
+                                                            - table.loc[date, "Interests"])
+                else:
+                    table.loc[date, "Principal payment"] = (self.additional_payment[date]["amount"]
+                                                            - table.loc[date, "Interests"])
             else:
                 table.loc[date, "Principal payment"] = min(self.payment, table.loc[previous_date, "Principal"])
             table.loc[date, "Principal"] = (table.loc[previous_date, "Principal"]
                                             - table.loc[date, "Principal payment"])
             if table.loc[date, "Additional"] & (~self.fixed_payments):
-                self.payment = table.loc[date, "Principal"] / (self.n_payments - i)
-
+                self.payment = (table.loc[date, "Principal"]
+                                / (sum((table.index > date) & (~table.Additional))))
             previous_date = date
         table.loc[:, "Total payment"] = (table.loc[:, "Principal payment"]
                                          + table.loc[:, "Interests"])
         return (table
-                .sort_index()
-                .drop(columns="Additional"))
+                .sort_index())
 
     def add_payment(self,
                     date,
-                    amount):
-        self.additional_payment |= {date: amount}
+                    amount,
+                    on_top: bool = False):
+        self.additional_payment |= {date: {"amount": amount,
+                                           "on_top": on_top}}
