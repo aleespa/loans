@@ -8,3 +8,8 @@ import numpy as np
 class Interest:
     interest_rate: float | np.ndarray
     frequency: Literal["annual", "monthly"] = "annual"
+    term_structure: list[float] | None = None
+
+    def calculate_interest(self):
+        pass
+
