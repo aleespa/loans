@@ -110,7 +110,8 @@ class Loan:
                     table.loc[date, "Principal payment"] = (self.additional_payment[date]["amount"]
                                                             - table.loc[date, "Interests"])
             else:
-                table.loc[date, "Principal payment"] = min(self.payment, table.loc[previous_date, "Principal"])
+                table.loc[date, "Principal payment"] = (min(self.payment, table.loc[previous_date, "Principal"])
+                                                        - table.loc[date, "Interests"])
             table.loc[date, "Principal"] = (table.loc[previous_date, "Principal"]
                                             - table.loc[date, "Principal payment"])
             if table.loc[date, "Additional"] & (~self.fixed_payments):
